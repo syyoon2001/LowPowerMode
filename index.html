@@ -28,7 +28,7 @@
 
   --bg:#FAFBFB; --card:#FFFFFF; --line:#E9EEEE; --muted:#D8DDDC;
   --body:#555958; --head:#181C1B;
-  --dim:#8E9594; --red:#C98686;
+  --dim:#8E9594; --red:#C98686;   /* dim = 보조 글자 · muted = 선과 면에만 */
 
   /* ── 읽는 글씨와 누르는 글씨를 나눕니다 ──
      읽을 것은 크게, 누를 것은 한 단계 작게.
@@ -123,8 +123,8 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 
 /* ═══════════ 상단바에 붙는 제목 ═══════════ */
 .chrome.stack{
-  flex-direction:column;align-items:stretch;justify-content:flex-start;gap:3px;
-  height:auto;padding:calc(var(--safe-t) + 12px) var(--pad) 12px;
+  flex-direction:column;align-items:stretch;justify-content:flex-start;gap:34px;
+  height:auto;padding:calc(var(--safe-t) + 16px) var(--pad) 18px;
 }
 .dbtn{
   align-self:center;
@@ -163,14 +163,14 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 
 /* 완료는 이 버튼으로만 */
 .mark{
-  flex:0 0 auto;width:26px;height:26px;border-radius:50%;
-  border:1.9px solid var(--muted);display:grid;place-items:center;
+  flex:0 0 auto;width:24px;height:24px;border-radius:5px;
+  border:1.8px solid var(--muted);display:grid;place-items:center;
   transition:background .22s var(--ease-soft),border-color .22s var(--ease-soft),transform .1s ease-out;
 }
 .mark:active{transform:scale(.86)}
 .done .mark{background:var(--mint);border-color:var(--mint)}
 .mark svg{
-  width:14px;height:14px;stroke:#fff;stroke-width:2.8;fill:none;stroke-linecap:round;stroke-linejoin:round;
+  width:11px;height:11px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;
   transform:scale(.4);opacity:0;transition:transform .34s cubic-bezier(.3,1.5,.5,1),opacity .16s;
 }
 .done .mark svg{transform:scale(1);opacity:1}
@@ -180,20 +180,20 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
   font-size:var(--fs-body);font-weight:600;letter-spacing:var(--tr-body);line-height:1.45;
   color:var(--head);transition:color .3s var(--ease-soft);word-break:keep-all;
 }
-.tags .sep{margin:0 7px;font-weight:500;color:var(--muted)}
+.tags .sep{margin:0 7px;font-weight:500;color:var(--dim)}
 .done .tags{color:#A4ABAA}
 .done .tags .sep{color:#C9CFCE}
-.b-none{font-size:var(--fs-body);font-weight:500;letter-spacing:var(--tr-body);color:var(--muted)}
+.b-none{font-size:var(--fs-body);font-weight:500;letter-spacing:var(--tr-body);color:var(--dim)}
 .done .b-none{opacity:.6}
 
 .b-side{flex:0 0 auto;display:flex;align-items:center;gap:1px}
 .b-min{
-  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);color:var(--muted);
+  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);color:var(--dim);
   padding:0 5px;font-variant-numeric:tabular-nums;transition:color .2s ease-out;
 }
 .b-min.run{color:var(--mint)}
 .smallbtn{
-  width:33px;height:33px;border-radius:8px;display:grid;place-items:center;color:var(--muted);
+  width:33px;height:33px;border-radius:8px;display:grid;place-items:center;color:var(--dim);
   transition:transform .1s ease-out,background .16s ease-out,color .16s ease-out;
 }
 .smallbtn:active{background:rgba(24,28,27,.055);transform:scale(.9)}
@@ -201,13 +201,13 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 .smallbtn svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
 
 .empty{
-  text-align:center;padding:48px 24px;color:var(--muted);
+  text-align:center;padding:48px 24px;color:var(--dim);
   font-size:var(--fs-sub);font-weight:500;letter-spacing:var(--tr-sub);line-height:1.8;
 }
 
 .addbtn{
   width:100%;margin-top:var(--gap);padding:14px;border-radius:var(--r-card);
-  color:var(--muted);font-size:var(--fs-act);font-weight:650;letter-spacing:var(--tr-act);
+  color:var(--dim);font-size:var(--fs-act);font-weight:650;letter-spacing:var(--tr-act);
   box-shadow:inset 0 0 0 1.5px var(--line);
   transition:transform .1s ease-out,color .16s,box-shadow .16s,background .16s;
 }
@@ -225,7 +225,7 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 .tabbar.on{display:flex}
 .tab{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 0 5px;
-  color:var(--muted);transition:color .22s var(--ease-soft),transform .1s ease-out;
+  color:var(--dim);transition:color .22s var(--ease-soft),transform .1s ease-out;
 }
 .tab:active{transform:scale(.93)}
 .tab.sel{color:var(--mint)}
@@ -269,7 +269,7 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 }
 .grp{
   margin:22px 0 10px;
-  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);line-height:var(--lh-micro);color:var(--muted);
+  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);line-height:var(--lh-micro);color:var(--dim);
 }
 
 .actions{display:flex;gap:9px;margin-top:24px}
@@ -302,7 +302,7 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 .picker .swatch-mini{flex:0 0 auto;width:9px;height:9px;border-radius:50%}
 .picker .nm{font-size:var(--fs-body);font-weight:600;letter-spacing:var(--tr-body);color:var(--head)}
 .picker .none{
-  padding:20px;text-align:center;color:var(--muted);
+  padding:20px;text-align:center;color:var(--dim);
   font-size:var(--fs-sub);font-weight:500;letter-spacing:var(--tr-sub);line-height:1.7;
 }
 
@@ -331,10 +331,13 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 .wchip.sel{background:var(--mint);color:#fff}
 
 /* ═══════════ 목록형 화면 (보관함 · 설정) ═══════════ */
-.sec{margin-top:28px}
+.sec{margin-top:34px}
+/* 첫 구역은 상단바 바로 아래라 간격을 따로 잡습니다 */
+.scroll>.sec:first-child{margin-top:20px}
+.scroll>.blocks:first-child{margin-top:20px}
 .sec h4{
-  margin:0 0 10px;padding:0 4px;
-  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);line-height:var(--lh-micro);color:var(--muted);
+  margin:0 0 14px;padding:0 4px;
+  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);line-height:var(--lh-micro);color:var(--dim);
 }
 .sec h4 em{
   display:block;margin-top:6px;font-style:normal;
@@ -348,7 +351,7 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
   display:block;margin-top:3px;
   font-size:var(--fs-sub);font-weight:500;letter-spacing:var(--tr-sub);line-height:var(--lh-sub);color:var(--dim);
 }
-.line .t.pale{color:var(--muted);font-weight:500}
+.line .t.pale{color:var(--dim);font-weight:500}
 .line select,.line input[type=number]{width:auto;min-width:104px;text-align:center;padding:10px 14px}
 /* 안드로이드 기본 화살표를 끄고 직접 그려 넣습니다 */
 .line select{
@@ -382,7 +385,7 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:2px;border-rad
 .wd{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:7px}
 .wd span{
   text-align:center;
-  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);color:var(--muted);
+  font-size:var(--fs-micro);font-weight:700;letter-spacing:var(--tr-micro);color:var(--dim);
 }
 .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
 .cell{
@@ -760,11 +763,7 @@ function renderBlocks(el, list, opts, onChange){
   });
   attachGestures(el,list,onChange);
 }
-function emptyHint(){
-  return state.tasks.length
-    ? '아직 블록이 없어요.<br>아래 + 로 하나만 만들어볼까요.'
-    : '보관함에서 할 일을 먼저 만들어주세요.<br>블록은 그 할 일들로 채워집니다.';
-}
+function emptyHint(){ return '새 블록이나 모드를 추가해보세요'; }
 
 /* ═══════════════════════════════════════════════════
    6. 꾹 눌러 순서 바꾸기 — 손가락에 1:1로 붙습니다
