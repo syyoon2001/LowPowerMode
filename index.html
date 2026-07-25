@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Low Power Mood</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FAFBFB">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Low Power Mood">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* ============================================================
+   색상 토큰 — 여기만 바꾸면 앱 전체 색이 바뀝니다
+   ============================================================ */
+:root{
+  --mint:#70C4B8; --mint-soft:#98D2CA; --sky:#B8E6EE; --pale:#D2EAF3;
+  --green:#BFE1B0; --yellow:#F4E89C; --lav:#BBC7E8; --pink:#F9DCEF;
+  --bg:#FAFBFB; --card:#FFFFFF; --line:#E9EEEE; --muted:#D8DDDC;
+  --body:#555958; --head:#181C1B;
+  --r:16px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--body);
+  font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Noto Sans KR',system-ui,sans-serif;
+  font-size:16px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer}
+input,select{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--mint);outline-offset:1px}
+
+/* ---------- 레이아웃 ---------- */
+.app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+.view{display:none;flex:1;flex-direction:column}
+.view.on{display:flex}
+
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--safe-t) + 14px) 18px 8px;
+}
+/* 홈 상단 앱 이름 */
+.brand{
+  padding:calc(var(--safe-t) + 18px) 20px 0;
+  font-family:'Helvetica Neue',Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:14px;font-weight:600;letter-spacing:.01em;
+  color:var(--muted);text-align:left;
+}
+.topbar.tight{padding-top:6px}
+.iconbtn{
+  width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+  color:var(--body);transition:background .15s;
+}
+.iconbtn:active{background:var(--line)}
+.iconbtn svg{width:21px;height:21px;stroke:currentColor;stroke-width:1.7;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+.head{padding:2px 20px 18px}
+.head .day{font-size:30px;font-weight:750;color:var(--head);letter-spacing:-.02em;line-height:1.15}
+.head .sub{font-size:14px;color:var(--muted);margin-top:4px;font-weight:500}
+
+.scroll{flex:1;overflow-y:auto;padding:0 16px calc(var(--safe-b) + 120px);-webkit-overflow-scrolling:touch}
+
+/* ---------- 블록 카드 ---------- */
+.blocks{display:flex;flex-direction:column;gap:9px}
+.block{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px 14px 14px 16px;display:flex;align-items:flex-start;gap:12px;
+  transition:background .18s,opacity .18s,transform .12s,box-shadow .18s;
+  position:relative;
+}
+.block:active{transform:scale(.995)}
+.block.done{background:#F1F4F4;border-color:#E4E9E9}
+.block.done .b-title{color:#A9AFAE}
+.block.done .chip{opacity:.4}
+.block.drag{
+  box-shadow:0 8px 24px rgba(24,28,27,.13);border-color:var(--mint-soft);
+  transform:scale(1.02);opacity:.95;z-index:5;
+}
+.block .mark{
+  flex:0 0 auto;width:20px;height:20px;margin-top:2px;border-radius:50%;
+  border:1.8px solid var(--muted);display:grid;place-items:center;transition:.18s;
+}
+.block.done .mark{background:var(--mint);border-color:var(--mint)}
+.block .mark svg{width:12px;height:12px;stroke:#fff;stroke-width:2.6;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .18s}
+.block.done .mark svg{opacity:1}
+.b-main{flex:1;min-width:0}
+.b-title{font-size:16px;font-weight:600;color:var(--head);letter-spacing:-.01em;word-break:break-all}
+.b-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.chip{
+  font-size:12px;font-weight:600;padding:3px 9px;border-radius:8px;
+  color:#3d4443;transition:opacity .18s;
+}
+.b-side{flex:0 0 auto;display:flex;align-items:center;gap:2px;margin-top:-2px}
+.b-min{font-size:13px;color:var(--muted);font-weight:600;padding:0 4px;font-variant-numeric:tabular-nums}
+.b-min.run{color:var(--mint)}
+.smallbtn{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--muted)}
+.smallbtn:active{background:var(--line)}
+.smallbtn svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.smallbtn.play{color:var(--mint)}
+
+.empty{text-align:center;padding:46px 20px;color:var(--muted);font-size:14.5px;line-height:1.7}
+
+/* ---------- 추가 버튼 ---------- */
+.addrow{margin-top:10px}
+.addbtn{
+  width:100%;padding:14px;border-radius:var(--r);border:1.5px dashed var(--muted);
+  color:var(--muted);font-weight:600;font-size:15px;transition:.15s;
+}
+.addbtn:active{background:var(--line);color:var(--body)}
+
+/* ---------- 하단 v 버튼 ---------- */
+.vwrap{
+  position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;
+  padding:0 0 calc(var(--safe-b) + 22px);pointer-events:none;
+  background:linear-gradient(to top,var(--bg) 55%,transparent);
+  padding-top:34px;
+}
+.vbtn{
+  pointer-events:auto;width:58px;height:58px;border-radius:50%;
+  background:var(--card);border:1px solid var(--line);
+  box-shadow:0 4px 18px rgba(24,28,27,.07);
+  display:grid;place-items:center;color:var(--mint);transition:transform .15s;
+}
+.vbtn:active{transform:scale(.92)}
+.vbtn svg{width:24px;height:24px;stroke:currentColor;stroke-width:2.2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- 마무리 오버레이 (앱의 핵심 순간) ---------- */
+.finish{
+  position:fixed;inset:0;z-index:60;display:none;
+  background:linear-gradient(170deg,#FFFFFF 0%,#F2FAF9 60%,#EAF6F8 100%);
+  padding:calc(var(--safe-t) + 40px) 28px calc(var(--safe-b) + 28px);
+  overflow-y:auto;
+}
+.finish.on{display:block;animation:fadein .4s ease both}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.finish .fclose{position:absolute;top:calc(var(--safe-t) + 14px);right:14px}
+.fmsg{
+  margin-top:22vh;font-size:25px;font-weight:750;color:var(--head);
+  letter-spacing:-.025em;line-height:1.45;word-break:keep-all;
+  animation:rise .55s .1s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.fdone{margin-top:30px;animation:rise .55s .3s cubic-bezier(.2,.7,.3,1) both}
+.fdone .lbl{font-size:12.5px;font-weight:700;color:var(--mint);letter-spacing:.06em;margin-bottom:11px}
+.fdone li{
+  list-style:none;padding:11px 15px;background:rgba(255,255,255,.75);
+  border-radius:12px;margin-bottom:7px;font-weight:600;color:var(--head);font-size:15px;
+}
+
+/* ---------- 시트 / 모달 ---------- */
+.veil{position:fixed;inset:0;background:rgba(24,28,27,.32);z-index:70;display:none}
+.veil.on{display:block;animation:fadein .2s both}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:80;display:none;
+  background:var(--card);border-radius:22px 22px 0 0;
+  padding:8px 18px calc(var(--safe-b) + 20px);
+  max-width:520px;margin:0 auto;max-height:88dvh;overflow-y:auto;
+}
+.sheet.on{display:block;animation:up .28s cubic-bezier(.2,.8,.3,1) both}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.grab{width:38px;height:4px;background:var(--line);border-radius:2px;margin:6px auto 16px}
+.sheet h3{margin:0 0 14px;font-size:18px;font-weight:700;color:var(--head);letter-spacing:-.01em}
+.field{margin-bottom:15px}
+.field>label{display:block;font-size:13px;font-weight:650;color:var(--body);margin-bottom:7px}
+.opt{
+  display:block;width:100%;text-align:left;padding:15px 16px;border-radius:13px;
+  background:var(--bg);margin-bottom:8px;font-weight:600;color:var(--head);
+}
+.opt:active{background:var(--line)}
+.opt small{display:block;font-weight:500;color:var(--muted);font-size:13px;margin-top:2px}
+.actions{display:flex;gap:9px;margin-top:20px}
+.btn{flex:1;padding:14px;border-radius:13px;font-weight:700;text-align:center;font-size:15.5px}
+.btn.primary{background:var(--mint);color:#fff}
+.btn.ghost{background:var(--bg);color:var(--body)}
+.btn.danger{background:#fff;color:#D08A8A;border:1px solid var(--line);flex:0 0 auto;padding:14px 18px}
+
+/* 할 일 다중 선택 */
+.picker{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.picker .row{
+  display:flex;align-items:center;gap:11px;padding:12px 14px;
+  border-bottom:1px solid var(--line);width:100%;text-align:left;
+}
+.picker .row:last-child{border-bottom:0}
+.picker .row:active{background:var(--bg)}
+.picker .box{
+  width:19px;height:19px;flex:0 0 auto;border-radius:6px;border:1.8px solid var(--muted);
+  display:grid;place-items:center;
+}
+.picker .row.sel .box{background:var(--mint);border-color:var(--mint)}
+.picker .box svg{width:11px;height:11px;stroke:#fff;stroke-width:2.8;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.picker .row.sel .box svg{opacity:1}
+.picker .nm{font-weight:600;color:var(--head);font-size:15px}
+.picker .none{padding:16px 14px;color:var(--muted);font-size:14px;text-align:center}
+
+/* ---------- 설정 ---------- */
+.sec{margin:22px 0 0}
+.sec>h4{
+  margin:0 0 10px;padding:0 4px;font-size:12.5px;font-weight:700;
+  color:var(--muted);letter-spacing:.05em;
+}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.line{display:flex;align-items:center;gap:12px;padding:14px 15px;border-bottom:1px solid var(--line)}
+.line:last-child{border-bottom:0}
+.line>.t{flex:1;font-weight:600;color:var(--head);font-size:15px}
+.line>.t small{display:block;font-weight:500;color:var(--muted);font-size:12.5px;margin-top:1px}
+.line select,.line input[type=number]{width:auto;min-width:96px;text-align:center;padding:8px 10px}
+.line input[type=text]{flex:1;border:0;background:transparent;padding:0;font-weight:600;color:var(--head)}
+.toggle{width:48px;height:29px;border-radius:15px;background:var(--muted);position:relative;transition:.2s;flex:0 0 auto}
+.toggle.on{background:var(--mint)}
+.toggle i{position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#fff;transition:.2s}
+.toggle.on i{left:22px}
+.addline{padding:14px 15px;color:var(--mint);font-weight:700;width:100%;text-align:left;font-size:15px}
+.addline:active{background:var(--bg)}
+.seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:3px}
+.seg button{padding:7px 13px;border-radius:8px;font-weight:650;font-size:14px;color:var(--muted)}
+.seg button.on{background:var(--card);color:var(--head);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+
+/* ---------- 달력 ---------- */
+.cal{padding:0 4px}
+.calhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.calhead .m{font-size:18px;font-weight:700;color:var(--head)}
+.wd{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:5px}
+.wd span{text-align:center;font-size:12px;font-weight:650;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cell{aspect-ratio:1/1.05;border-radius:12px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;font-size:14.5px;font-weight:600;color:var(--head)}
+.cell.pad{color:transparent;pointer-events:none}
+.cell:active{background:var(--line)}
+.cell.today{background:var(--pale)}
+.cell .dot{width:5px;height:5px;border-radius:50%;background:transparent}
+.cell.has .dot{background:var(--mint)}
+
+.toast{
+  position:fixed;left:50%;bottom:calc(var(--safe-b) + 100px);transform:translateX(-50%);
+  background:var(--head);color:#fff;padding:12px 20px;border-radius:22px;font-size:14.5px;
+  font-weight:600;z-index:90;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;
+}
+.toast.on{opacity:1}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ 오늘 ============ -->
+  <section class="view on" id="v-home">
+    <div class="brand">Low Power Mood</div>
+    <div class="topbar tight">
+      <button class="iconbtn" id="go-settings" aria-label="설정">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+      </button>
+      <button class="iconbtn" id="go-past" aria-label="지난날">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      </button>
+    </div>
+    <div class="head">
+      <div class="day" id="h-date"></div>
+      <div class="sub" id="h-sub"></div>
+    </div>
+    <div class="scroll">
+      <div class="blocks" id="h-blocks"></div>
+      <div class="addrow"><button class="addbtn" id="h-add">+ 추가</button></div>
+    </div>
+  </section>
+
+  <!-- ============ 지난날 ============ -->
+  <section class="view" id="v-past">
+    <div class="topbar">
+      <button class="iconbtn back" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div style="font-weight:700;color:var(--head)">지난날</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="scroll">
+      <div class="cal">
+        <div class="calhead">
+          <button class="iconbtn" id="c-prev" aria-label="이전 달"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="m" id="c-month"></div>
+          <button class="iconbtn" id="c-next" aria-label="다음 달"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+        <div class="wd" id="c-wd"></div>
+        <div class="grid" id="c-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 특정 날짜 ============ -->
+  <section class="view" id="v-day">
+    <div class="topbar">
+      <button class="iconbtn back" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div style="width:40px"></div>
+    </div>
+    <div class="head"><div class="day" id="d-date"></div></div>
+    <div class="scroll">
+      <div class="blocks" id="d-blocks"></div>
+      <div class="addrow"><button class="addbtn" id="d-add">+ 추가</button></div>
+    </div>
+  </section>
+
+  <!-- ============ 설정 ============ -->
+  <section class="view" id="v-set">
+    <div class="topbar">
+      <button class="iconbtn back" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div style="font-weight:700;color:var(--head)">설정</div>
+      <div style="width:40px"></div>
+    </div>
+    <div class="scroll" id="s-body"></div>
+  </section>
+
+  <!-- ============ 모드 편집 ============ -->
+  <section class="view" id="v-mode">
+    <div class="topbar">
+      <button class="iconbtn back" aria-label="뒤로">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <button class="iconbtn" id="m-del" aria-label="모드 삭제">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/></svg>
+      </button>
+    </div>
+    <div class="scroll">
+      <div class="field" style="padding:0 4px 6px"><label>모드 이름</label>
+        <input type="text" id="m-name" placeholder="예: 느린 날"></div>
+      <div class="blocks" id="m-blocks"></div>
+      <div class="addrow"><button class="addbtn" id="m-add">+ 블록 추가</button></div>
+    </div>
+  </section>
+</div>
+
+<!-- 하단 v -->
+<div class="vwrap" id="vwrap">
+  <button class="vbtn" id="vbtn" aria-label="오늘 마무리">
+    <svg viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"/></svg>
+  </button>
+</div>
+
+<!-- 마무리 화면 -->
+<div class="finish" id="finish">
+  <button class="iconbtn fclose" aria-label="닫기">
+    <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <div class="fmsg" id="f-msg"></div>
+  <div class="fdone" id="f-done"></div>
+</div>
+
+<div class="veil" id="veil"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   1. 저장소
+   ============================================================ */
+const KEY='oneday.v1';
+let memFallback=null;                       // 저장이 막힌 환경(미리보기)용
+
+const DEFAULT={
+  settings:{ resetHour:0, weekStart:'mon', defaultMinutes:25, timer:false },
+  tasks:[
+    {id:'t1',name:'감정일기'},
+    {id:'t2',name:'영어'},
+    {id:'t3',name:'아카이빙 앱'},
+    {id:'t4',name:'블로그'},
+    {id:'t5',name:'AI 공부'}
+  ],
+  dailyBlocks:[
+    {id:'d1',title:'감정일기',minutes:5,taskIds:['t1']}
+  ],
+  modes:[
+    {id:'m1',name:'느린 날',blocks:[{id:'mb1',title:'감정일기',minutes:5,taskIds:['t1']}]},
+    {id:'m2',name:'보통인 날',blocks:[
+      {id:'mb2',title:'감정일기',minutes:5,taskIds:['t1']},
+      {id:'mb3',title:'영어',minutes:10,taskIds:['t2']},
+      {id:'mb4',title:'블록 하나',minutes:25,taskIds:['t3']}
+    ]},
+    {id:'m3',name:'좋은 날',blocks:[
+      {id:'mb5',title:'감정일기',minutes:5,taskIds:['t1']},
+      {id:'mb6',title:'영어',minutes:10,taskIds:['t2']},
+      {id:'mb7',title:'블록 하나',minutes:25,taskIds:['t3']},
+      {id:'mb8',title:'블록 하나 더',minutes:25,taskIds:[]}
+    ]}
+  ],
+  days:{}
+};
+
+/* 마무리 문구 — 자유롭게 바꾸세요 */
+const MESSAGES=[
+  '오늘도 잘했어! 너무 고생 많았어.',
+  '하루를 여기까지 데리고 온 것만으로 충분해. 정말 애썼어.',
+  '얼마나 했든 괜찮아. 오늘의 너를 내가 알아.',
+  '잘 안 된 날도 네 잘못은 아니야. 그래도 여기 있어줘서 고마워.',
+  '오늘 하루, 조용히 잘 버텼다. 이제 편하게 쉬자.'
+];
+
+let state=load();
+
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){
+      const saved=JSON.parse(raw);
+      const merged=Object.assign(structuredClone(DEFAULT),saved);
+      merged.settings=Object.assign({},DEFAULT.settings,saved.settings||{});
+      return merged;
+    }
+  }catch(e){}
+  return memFallback||structuredClone(DEFAULT);
+}
+function save(){
+  memFallback=state;
+  try{ localStorage.setItem(KEY,JSON.stringify(state)); }catch(e){}
+}
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+/* ============================================================
+   2. 날짜
+   ============================================================ */
+const WD_MON=['월','화','수','목','금','토','일'];
+const WD_SUN=['일','월','화','수','목','금','토'];
+const ymd=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+function todayKey(){
+  const d=new Date();
+  if(d.getHours()<state.settings.resetHour) d.setDate(d.getDate()-1);
+  return ymd(d);
+}
+function label(key){
+  const [y,m,dd]=key.split('-').map(Number);
+  const d=new Date(y,m-1,dd);
+  return `${m}월 ${dd}일 ${WD_SUN[d.getDay()]}요일`;
+}
+function ensureToday(){
+  const k=todayKey();
+  if(!state.days[k]){
+    state.days[k]={blocks:state.dailyBlocks.map(b=>({
+      id:uid(),title:b.title,minutes:b.minutes,taskIds:[...(b.taskIds||[])],done:false
+    }))};
+    save();
+  }
+  return k;
+}
+let curKey=ensureToday();
+
+/* ============================================================
+   3. 화면 전환
+   ============================================================ */
+function show(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id===id));
+  document.getElementById('vwrap').style.display = id==='v-home' ? 'flex' : 'none';
+  document.querySelector('.scroll')&&window.scrollTo(0,0);
+}
+document.querySelectorAll('.back').forEach(b=>b.onclick=()=>{
+  const cur=document.querySelector('.view.on').id;
+  if(cur==='v-mode') { saveModeEdit(); show('v-set'); renderSettings(); }
+  else if(cur==='v-day') { show('v-past'); renderCal(); }
+  else { show('v-home'); renderHome(); }
+});
+document.getElementById('go-settings').onclick=()=>{renderSettings();show('v-set')};
+document.getElementById('go-past').onclick=()=>{renderCal();show('v-past')};
+
+/* ============================================================
+   4. 블록 목록 렌더 (오늘 / 지난날 / 모드 공용)
+   ============================================================ */
+const CHIP_COLORS=['var(--green)','var(--yellow)','var(--lav)','var(--pink)','var(--sky)','var(--mint-soft)','var(--pale)'];
+function taskColor(id){
+  const i=state.tasks.findIndex(t=>t.id===id);
+  return CHIP_COLORS[(i<0?0:i)%CHIP_COLORS.length];
+}
+function taskName(id){ const t=state.tasks.find(t=>t.id===id); return t?t.name:null; }
+
+const CHECK='<svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>';
+const EDIT ='<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>';
+const PLAY ='<svg viewBox="0 0 24 24"><path d="M7 4l12 8-12 8z" fill="currentColor" stroke="none"/></svg>';
+const PAUSE='<svg viewBox="0 0 24 24"><path d="M8 4v16M16 4v16"/></svg>';
+
+/* opts: {toggle:bool, timer:bool} */
+function renderBlocks(el, list, opts, onChange){
+  el.innerHTML='';
+  if(!list.length){
+    el.innerHTML=`<div class="empty">${opts.emptyText||'아직 블록이 없어요.<br>아래 + 로 하나만 만들어볼까요.'}</div>`;
+  }
+  list.forEach((b,idx)=>{
+    const d=document.createElement('div');
+    d.className='block'+(b.done?' done':'');
+    d.dataset.id=b.id;
+    const chips=(b.taskIds||[]).map(id=>{
+      const n=taskName(id); if(!n) return '';
+      return `<span class="chip" style="background:${taskColor(id)}">${esc(n)}</span>`;
+    }).join('');
+    const running = timer.id===b.id;
+    d.innerHTML=`
+      ${opts.toggle?`<div class="mark">${CHECK}</div>`:''}
+      <div class="b-main">
+        <div class="b-title">${esc(b.title)}</div>
+        ${chips?`<div class="b-chips">${chips}</div>`:''}
+      </div>
+      <div class="b-side">
+        <span class="b-min${running?' run':''}">${running?fmt(timer.left):b.minutes+'분'}</span>
+        ${opts.timer?`<button class="smallbtn play" data-a="timer">${running&&timer.on?PAUSE:PLAY}</button>`:''}
+        <button class="smallbtn" data-a="edit">${EDIT}</button>
+      </div>`;
+
+    d.querySelector('[data-a="edit"]').onclick=e=>{
+      e.stopPropagation();
+      openBlockEditor(list,idx,onChange);
+    };
+    const tb=d.querySelector('[data-a="timer"]');
+    if(tb) tb.onclick=e=>{e.stopPropagation();toggleTimer(b)};
+
+    if(opts.toggle){
+      d.onclick=()=>{
+        if(d.dataset.moved) return;
+        b.done=!b.done; save(); onChange();
+      };
+    }
+    el.appendChild(d);
+  });
+  attachDrag(el,list,onChange);
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+
+/* ============================================================
+   5. 길게 눌러 순서 바꾸기
+   ============================================================ */
+function attachDrag(container,list,onChange){
+  let el=null,timer0=null,startY=0,active=false;
+
+  container.querySelectorAll('.block').forEach(card=>{
+    card.addEventListener('touchstart',e=>{
+      if(e.target.closest('.smallbtn')) return;
+      startY=e.touches[0].clientY; el=card; active=false;
+      delete card.dataset.moved;
+      timer0=setTimeout(()=>{
+        active=true; card.classList.add('drag');
+        if(navigator.vibrate) navigator.vibrate(12);
+      },420);
+    },{passive:true});
+
+    card.addEventListener('touchmove',e=>{
+      const y=e.touches[0].clientY;
+      if(!active){
+        if(Math.abs(y-startY)>10){clearTimeout(timer0);el=null}
+        return;
+      }
+      e.preventDefault();
+      card.dataset.moved='1';
+      const after=[...container.querySelectorAll('.block:not(.drag)')]
+        .find(c=>y < c.getBoundingClientRect().top + c.offsetHeight/2);
+      if(after) container.insertBefore(card,after); else container.appendChild(card);
+    },{passive:false});
+
+    const end=()=>{
+      clearTimeout(timer0);
+      if(active){
+        card.classList.remove('drag');
+        const order=[...container.querySelectorAll('.block')].map(c=>c.dataset.id);
+        list.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));
+        save(); onChange();
+        setTimeout(()=>delete card.dataset.moved,50);
+      }
+      active=false; el=null;
+    };
+    card.addEventListener('touchend',end);
+    card.addEventListener('touchcancel',end);
+  });
+}
+
+/* ============================================================
+   6. 타이머 (설정에서 켤 때만)
+   ============================================================ */
+let timer={id:null,left:0,on:false,tick:null};
+function toggleTimer(b){
+  if(timer.id===b.id){
+    timer.on=!timer.on;
+  }else{
+    timer={id:b.id,left:b.minutes*60,on:true,tick:null};
+  }
+  clearInterval(timer.tick);
+  if(timer.on){
+    timer.tick=setInterval(()=>{
+      timer.left--;
+      if(timer.left<=0){
+        clearInterval(timer.tick); timer={id:null,left:0,on:false,tick:null};
+        if(navigator.vibrate) navigator.vibrate([80,60,80]);
+        toast('시간 다 됐어. 잘했어!');
+      }
+      refresh();
+    },1000);
+  }
+  refresh();
+}
+
+/* ============================================================
+   7. 오늘 화면
+   ============================================================ */
+function renderHome(){
+  curKey=ensureToday();
+  document.getElementById('h-date').textContent=label(curKey);
+  const day=state.days[curKey];
+  const n=day.blocks.length;
+  document.getElementById('h-sub').textContent = n?`블록 ${n}개`:'';
+  renderBlocks(document.getElementById('h-blocks'),day.blocks,
+    {toggle:true,timer:state.settings.timer},renderHome);
+}
+document.getElementById('h-add').onclick=()=>addSheet(state.days[curKey].blocks,renderHome);
+
+/* + 시트 : 블록 / 모드 */
+function addSheet(list,onChange){
+  const modes=state.modes.map(m=>
+    `<button class="opt" data-m="${m.id}">${esc(m.name)}<small>블록 ${m.blocks.length}개 추가</small></button>`
+  ).join('');
+  openSheet(`
+    <h3>무엇을 추가할까요</h3>
+    <button class="opt" data-new="1">빈 블록 하나</button>
+    ${modes?`<div style="margin:16px 0 8px;font-size:12.5px;font-weight:700;color:var(--muted);letter-spacing:.05em">모드</div>${modes}`:''}
+  `,box=>{
+    box.querySelector('[data-new]').onclick=()=>{
+      closeSheet();
+      list.push({id:uid(),title:'새 블록',minutes:state.settings.defaultMinutes,taskIds:[],done:false});
+      save(); onChange();
+      openBlockEditor(list,list.length-1,onChange);
+    };
+    box.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{
+      const m=state.modes.find(x=>x.id===b.dataset.m);
+      m.blocks.forEach(x=>list.push({id:uid(),title:x.title,minutes:x.minutes,taskIds:[...(x.taskIds||[])],done:false}));
+      save(); closeSheet(); onChange();
+    });
+  });
+}
+
+/* ============================================================
+   8. 블록 편집기
+   ============================================================ */
+function openBlockEditor(list,idx,onChange){
+  const b=list[idx];
+  let picked=[...(b.taskIds||[])];
+  const rows=state.tasks.length
+    ? state.tasks.map(t=>`
+        <button class="row${picked.includes(t.id)?' sel':''}" data-t="${t.id}">
+          <span class="box">${CHECK}</span><span class="nm">${esc(t.name)}</span>
+        </button>`).join('')
+    : `<div class="none">설정에서 할 일을 먼저 만들어주세요</div>`;
+
+  openSheet(`
+    <h3>블록 편집</h3>
+    <div class="field"><label>제목</label><input type="text" id="e-title" value="${esc(b.title)}"></div>
+    <div class="field"><label>시간 (분)</label><input type="number" id="e-min" min="1" max="600" value="${b.minutes}"></div>
+    <div class="field"><label>할 일 · 여러 개 고를 수 있어요</label><div class="picker" id="e-pick">${rows}</div></div>
+    <div class="actions">
+      <button class="btn danger" id="e-del">삭제</button>
+      <button class="btn primary" id="e-ok">저장</button>
+    </div>
+  `,box=>{
+    box.querySelectorAll('[data-t]').forEach(r=>r.onclick=()=>{
+      const id=r.dataset.t;
+      if(picked.includes(id)){picked=picked.filter(x=>x!==id);r.classList.remove('sel')}
+      else{picked.push(id);r.classList.add('sel')}
+    });
+    box.querySelector('#e-ok').onclick=()=>{
+      b.title=box.querySelector('#e-title').value.trim()||'새 블록';
+      b.minutes=Math.max(1,parseInt(box.querySelector('#e-min').value)||state.settings.defaultMinutes);
+      b.taskIds=picked;
+      save(); closeSheet(); onChange();
+    };
+    box.querySelector('#e-del').onclick=()=>{
+      list.splice(idx,1); save(); closeSheet(); onChange();
+    };
+  });
+}
+
+/* ============================================================
+   9. 마무리 (v 버튼)
+   ============================================================ */
+const finish=document.getElementById('finish');
+document.getElementById('vbtn').onclick=()=>{
+  document.getElementById('f-msg').textContent=MESSAGES[Math.floor(Math.random()*MESSAGES.length)];
+  const done=state.days[curKey].blocks.filter(b=>b.done);
+  document.getElementById('f-done').innerHTML = done.length
+    ? `<div class="lbl">오늘 한 것</div><ul style="margin:0;padding:0">
+       ${done.map(b=>`<li>${esc(b.title)}</li>`).join('')}</ul>`
+    : '';
+  finish.classList.add('on');
+};
+finish.querySelector('.fclose').onclick=()=>finish.classList.remove('on');
+
+/* ============================================================
+   10. 지난날 · 달력
+   ============================================================ */
+let calY,calM;
+{ const t=new Date(); calY=t.getFullYear(); calM=t.getMonth(); }
+document.getElementById('c-prev').onclick=()=>{calM--;if(calM<0){calM=11;calY--}renderCal()};
+document.getElementById('c-next').onclick=()=>{calM++;if(calM>11){calM=0;calY++}renderCal()};
+
+function renderCal(){
+  document.getElementById('c-month').textContent=`${calY}년 ${calM+1}월`;
+  const wds=state.settings.weekStart==='sun'?WD_SUN:WD_MON;
+  document.getElementById('c-wd').innerHTML=wds.map(w=>`<span>${w}</span>`).join('');
+
+  const first=new Date(calY,calM,1).getDay();          // 0=일
+  const offset=state.settings.weekStart==='sun'?first:(first+6)%7;
+  const days=new Date(calY,calM+1,0).getDate();
+  const tk=todayKey();
+  let html='';
+  for(let i=0;i<offset;i++) html+=`<div class="cell pad">0</div>`;
+  for(let d=1;d<=days;d++){
+    const k=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has=state.days[k]&&state.days[k].blocks.some(b=>b.done);
+    html+=`<button class="cell${has?' has':''}${k===tk?' today':''}" data-k="${k}">
+      <span>${d}</span><span class="dot"></span></button>`;
+  }
+  const g=document.getElementById('c-grid');
+  g.innerHTML=html;
+  g.querySelectorAll('[data-k]').forEach(c=>c.onclick=()=>openDay(c.dataset.k));
+}
+
+let dayKey=null;
+function openDay(k){
+  dayKey=k;
+  if(!state.days[k]) state.days[k]={blocks:[]};
+  document.getElementById('d-date').textContent=label(k);
+  renderDay(); show('v-day');
+}
+function renderDay(){
+  renderBlocks(document.getElementById('d-blocks'),state.days[dayKey].blocks,
+    {toggle:true,timer:false,emptyText:'이 날은 기록이 없어요.'},renderDay);
+}
+document.getElementById('d-add').onclick=()=>addSheet(state.days[dayKey].blocks,renderDay);
+
+/* ============================================================
+   11. 설정
+   ============================================================ */
+function renderSettings(){
+  const s=state.settings;
+  const hours=Array.from({length:24},(_,h)=>
+    `<option value="${h}"${s.resetHour===h?' selected':''}>${h}시</option>`).join('');
+
+  document.getElementById('s-body').innerHTML=`
+    <div class="sec"><h4>하루</h4><div class="card">
+      <div class="line"><div class="t">새 하루가 시작되는 시각<small>이 시각에 오늘 화면이 새로 만들어져요</small></div>
+        <select id="s-reset">${hours}</select></div>
+      <div class="line"><div class="t">달력 시작 요일</div>
+        <div class="seg"><button data-w="mon" class="${s.weekStart==='mon'?'on':''}">월</button>
+        <button data-w="sun" class="${s.weekStart==='sun'?'on':''}">일</button></div></div>
+    </div></div>
+
+    <div class="sec"><h4>블록</h4><div class="card">
+      <div class="line"><div class="t">기본 시간<small>새 블록을 만들 때 들어갈 분</small></div>
+        <input type="number" id="s-min" min="1" max="600" value="${s.defaultMinutes}"></div>
+      <div class="line"><div class="t">타이머<small>블록에 재생 버튼이 생겨요</small></div>
+        <button class="toggle${s.timer?' on':''}" id="s-timer"><i></i></button></div>
+    </div></div>
+
+    <div class="sec"><h4>할 일</h4><div class="card" id="s-tasks">
+      ${state.tasks.map(t=>`
+        <div class="line">
+          <span style="width:11px;height:11px;border-radius:4px;background:${taskColor(t.id)};flex:0 0 auto"></span>
+          <input type="text" value="${esc(t.name)}" data-tid="${t.id}">
+          <button class="smallbtn" data-tdel="${t.id}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>`).join('')}
+      <button class="addline" id="s-taskadd">+ 할 일 추가</button>
+    </div></div>
+
+    <div class="sec"><h4>매일 자동으로 생기는 블록</h4><div class="card">
+      ${state.dailyBlocks.length?state.dailyBlocks.map((b,i)=>`
+        <div class="line"><div class="t">${esc(b.title)}<small>${b.minutes}분</small></div>
+          <button class="smallbtn" data-dedit="${i}">${EDIT}</button></div>`).join('')
+        :`<div class="line"><div class="t" style="color:var(--muted);font-weight:500">없음</div></div>`}
+      <button class="addline" id="s-dailyadd">+ 블록 추가</button>
+    </div></div>
+
+    <div class="sec"><h4>모드<small style="display:block;font-weight:500;text-transform:none;letter-spacing:0;margin-top:4px">블록 여러 개를 묶어두고 한 번에 불러와요</small></h4>
+    <div class="card">
+      ${state.modes.map(m=>`
+        <div class="line"><div class="t">${esc(m.name)}<small>블록 ${m.blocks.length}개</small></div>
+          <button class="smallbtn" data-medit="${m.id}">${EDIT}</button></div>`).join('')}
+      <button class="addline" id="s-modeadd">+ 모드 추가</button>
+    </div></div>
+
+    <div class="sec"><h4>데이터</h4><div class="card">
+      <button class="addline" id="s-export" style="color:var(--body)">기록 내보내기 (백업)</button>
+    </div></div>
+    <div style="height:30px"></div>`;
+
+  const B=document.getElementById('s-body');
+  B.querySelector('#s-reset').onchange=e=>{s.resetHour=+e.target.value;save();};
+  B.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{s.weekStart=b.dataset.w;save();renderSettings()});
+  B.querySelector('#s-min').onchange=e=>{s.defaultMinutes=Math.max(1,+e.target.value||25);save()};
+  B.querySelector('#s-timer').onclick=()=>{s.timer=!s.timer;save();renderSettings()};
+
+  B.querySelectorAll('[data-tid]').forEach(inp=>inp.onchange=()=>{
+    const t=state.tasks.find(x=>x.id===inp.dataset.tid);
+    t.name=inp.value.trim()||'할 일'; save();
+  });
+  B.querySelectorAll('[data-tdel]').forEach(b=>b.onclick=()=>{
+    state.tasks=state.tasks.filter(t=>t.id!==b.dataset.tdel); save(); renderSettings();
+  });
+  B.querySelector('#s-taskadd').onclick=()=>{
+    state.tasks.push({id:uid(),name:'새 할 일'}); save(); renderSettings();
+  };
+
+  B.querySelectorAll('[data-dedit]').forEach(b=>b.onclick=()=>
+    openBlockEditor(state.dailyBlocks,+b.dataset.dedit,renderSettings));
+  B.querySelector('#s-dailyadd').onclick=()=>{
+    state.dailyBlocks.push({id:uid(),title:'새 블록',minutes:s.defaultMinutes,taskIds:[]});
+    save(); renderSettings();
+    openBlockEditor(state.dailyBlocks,state.dailyBlocks.length-1,renderSettings);
+  };
+
+  B.querySelectorAll('[data-medit]').forEach(b=>b.onclick=()=>openMode(b.dataset.medit));
+  B.querySelector('#s-modeadd').onclick=()=>{
+    const m={id:uid(),name:'새 모드',blocks:[]};
+    state.modes.push(m); save(); openMode(m.id);
+  };
+  B.querySelector('#s-export').onclick=exportData;
+}
+
+/* 모드 편집 화면 */
+let modeId=null;
+function openMode(id){
+  modeId=id;
+  const m=state.modes.find(x=>x.id===id);
+  document.getElementById('m-name').value=m.name;
+  renderModeBlocks(); show('v-mode');
+}
+function renderModeBlocks(){
+  const m=state.modes.find(x=>x.id===modeId);
+  renderBlocks(document.getElementById('m-blocks'),m.blocks,
+    {toggle:false,timer:false,emptyText:'이 모드에 담을 블록을 추가해주세요.'},renderModeBlocks);
+}
+function saveModeEdit(){
+  const m=state.modes.find(x=>x.id===modeId); if(!m) return;
+  m.name=document.getElementById('m-name').value.trim()||'새 모드'; save();
+}
+document.getElementById('m-add').onclick=()=>{
+  const m=state.modes.find(x=>x.id===modeId);
+  m.blocks.push({id:uid(),title:'새 블록',minutes:state.settings.defaultMinutes,taskIds:[]});
+  save(); renderModeBlocks();
+  openBlockEditor(m.blocks,m.blocks.length-1,renderModeBlocks);
+};
+document.getElementById('m-del').onclick=()=>{
+  state.modes=state.modes.filter(x=>x.id!==modeId); save();
+  show('v-set'); renderSettings();
+};
+
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='oneday-backup.json'; a.click();
+  toast('백업 파일을 내려받았어요');
+}
+
+/* ============================================================
+   12. 시트 / 토스트 / 새로고침
+   ============================================================ */
+const sheet=document.getElementById('sheet'), veil=document.getElementById('veil');
+function openSheet(html,init){
+  sheet.innerHTML=`<div class="grab"></div>${html}`;
+  sheet.classList.add('on'); veil.classList.add('on');
+  init&&init(sheet);
+}
+function closeSheet(){ sheet.classList.remove('on'); veil.classList.remove('on'); }
+veil.onclick=closeSheet;
+
+let tt;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),2200);
+}
+
+function refresh(){
+  const v=document.querySelector('.view.on').id;
+  if(v==='v-home') renderHome();
+  else if(v==='v-day') renderDay();
+}
+
+/* 자정(설정한 시각)이 지나면 자동으로 새 하루 */
+setInterval(()=>{
+  if(todayKey()!==curKey && document.querySelector('.view.on').id==='v-home'){
+    finish.classList.remove('on');
+    renderHome();
+  }
+},20000);
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && todayKey()!==curKey) renderHome();
+});
+
+renderHome();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
